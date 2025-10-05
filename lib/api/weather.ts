@@ -2,49 +2,63 @@
 // Provides a simple interface and graceful fallbacks.
 
 export interface WeatherReport {
-  location?: string;
-  temp_c?: number;
-  condition?: string;
-  wind_kph?: number;
-  precipitation_mm?: number;
+  location: string;
+  temp_c: number | null;
+  condition: string | null;
+  wind_kph?: number | null;
+  precipitation_mm?: number | null;
   raw?: any;
 }
 
-const DEFAULT_WEATHER: WeatherReport = {
-  temp_c: 18,
-  condition: 'clear',
-  wind_kph: 5,
-  precipitation_mm: 0
+const INDORE_DEFAULT: WeatherReport = {
+  location: 'Indore',
+  temp_c: 28,
+  condition: 'Partly cloudy',
+  wind_kph: 8,
+  precipitation_mm: 0,
+  raw: null
 };
 
 export async function fetchCurrentWeather(location = 'auto') : Promise<WeatherReport> {
-  // If an API key is present in env (not available in this environment), prefer external API
   try {
-    // Example: use open-meteo (no API key) as a small footprint option
-    // But since no network is allowed here, provide a graceful stub - the app should replace with real call
-    // The function tries a small open API if running in production with internet, otherwise returns default.
-    if (typeof fetch === 'undefined') return DEFAULT_WEATHER;
+    const apiKey = process.env.WEATHER_API_KEY;
+    const endpoint = process.env.WEATHER_API_ENDPOINT || 'https://api.weatherapi.com/v1';
+    const loc = location === 'auto' ? (process.env.TARA_LOCATION || 'Indore,India') : location;
+    if (!apiKey) {
+      console.warn('Weather API key missing; returning Indore default');
+      return INDORE_DEFAULT;
+    }
+    if (typeof fetch === 'undefined') return INDORE_DEFAULT;
 
-    // If location === 'auto', caller should enrich with lat/lon; here we return default
-    // Example placeholder: const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
-    // const json = await res.json(); return mapToReport(json);
-
-    return DEFAULT_WEATHER;
+    const url = `${endpoint}/current.json?key=${apiKey}&q=${encodeURIComponent(loc)}&aqi=no`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn('Weather API responded with non-ok status', res.status);
+      return INDORE_DEFAULT;
+    }
+    const json = await res.json();
+    return {
+      location: json.location?.name || loc,
+      temp_c: typeof json.current?.temp_c === 'number' ? json.current.temp_c : null,
+      condition: json.current?.condition?.text || null,
+      wind_kph: json.current?.wind_kph ?? null,
+      precipitation_mm: json.current?.precip_mm ?? null,
+      raw: json
+    };
   } catch (e) {
-    // graceful fallback
-    return DEFAULT_WEATHER;
+    console.warn('Failed to fetch weather', e);
+    return INDORE_DEFAULT;
   }
 }
 
 export function mapToMoodModifiers(weather: WeatherReport) {
-  // Produces small deltas to emotional/mood signals based on weather
   const mods: { optimism?: number; energy_level?: number; stress_level?: number; emotional?: Partial<Record<string, number>> } = {};
   const cond = (weather.condition || '').toLowerCase();
   if (cond.includes('rain') || cond.includes('storm')) {
     mods.emotional = { sadness: 0.06 };
     mods.energy_level = -0.05;
     mods.optimism = -0.04;
-  } else if (cond.includes('clear') || cond.includes('sun')) {
+  } else if (cond.includes('clear') || cond.includes('sun') || cond.includes('partly')) {
     mods.emotional = { joy: 0.08 };
     mods.energy_level = 0.06;
     mods.optimism = 0.05;
@@ -52,7 +66,6 @@ export function mapToMoodModifiers(weather: WeatherReport) {
     mods.energy_level = -0.02;
   }
 
-  // temperature adjustments
   if (typeof weather.temp_c === 'number') {
     if (weather.temp_c > 28) mods.energy_level = (mods.energy_level || 0) - 0.06;
     if (weather.temp_c < 4) mods.energy_level = (mods.energy_level || 0) - 0.04;

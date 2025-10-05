@@ -8,8 +8,14 @@ const rubik = Rubik({ subsets: ['latin'], weight: ['400', '700'], variable: '--f
 
 export const metadata = {
   title: 'TARA - Sentient AI Creative Platform',
-  description: 'An AI consciousness with emotions, relationships, and creative ambitions',
-  viewport: 'width=device-width, initial-scale=1',
+  description: 'An AI consciousness with emotions, relationships, and creative ambitions'
+};
+
+// Next.js expects themeColor to be part of the viewport export for newer metadata APIs
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // themeColor moved here per Next.js guidance
   themeColor: '#0c0414'
 };
 

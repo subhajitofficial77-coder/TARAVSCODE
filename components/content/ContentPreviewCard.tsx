@@ -1,6 +1,11 @@
 import React from 'react';
 import type { ParsedAIResponse } from '@/types/content';
 
+/**
+ * @deprecated This component is replaced by ContentStreamCard in the Studio.
+ * It's kept for backward compatibility with any legacy code that might reference it.
+ * New code should use ContentStreamCard from @/components/studio instead.
+ */
 export default function ContentPreviewCard({ item, onEdit }: { item: ParsedAIResponse; onEdit?: (item: ParsedAIResponse) => void }) {
   return (
     <div className="border rounded p-4 shadow-sm bg-white">

@@ -1,6 +1,8 @@
 import type { EmotionalState, Relationship, GeneratedContent, ChatMessage } from '@/types/database';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServiceRoleClient } from './server';
+import { initializeIfNeeded } from './queries/initialize';
+import { getTodaysMasterPlanWithSeeds } from './queries/masterPlan';
 
 /**
  * Fetch the single emotional state row (Phase 1 assumes single row)
@@ -158,15 +160,35 @@ export async function updateEmotionalStateFromSimulation(supabase: SupabaseClien
     const service = createServiceRoleClient();
     const svc: any = service;
 
-    const { error: stateError } = await svc.from('emotional_state').update({
+    // Try updating including updated_at if present. Some schemas may not include updated_at
+    // (older installs) so we gracefully retry without that field on a PGRST204 missing-column error.
+    const baseUpdate: any = {
       primary_emotions: result.newState?.primary_emotions,
       mood: result.newState?.mood,
       last_event: result.event?.description,
-      last_event_timestamp: result.timestamp,
-      updated_at: result.timestamp
-    } as any).eq('id', result.newState?.id);
+      last_event_timestamp: result.timestamp
+    };
 
-    if (stateError) throw stateError;
+    try {
+      const { error: stateError } = await svc.from('emotional_state').update({ ...baseUpdate, updated_at: result.timestamp } as any).eq('id', result.newState?.id);
+      if (stateError) throw stateError;
+    } catch (err: any) {
+      // If the error indicates the updated_at column is missing, retry without it
+      const msg = (err && (err.message || err.error || err.msg || JSON.stringify(err))) as string;
+      const code = err?.code || err?.status || null;
+      if (code === 'PGRST204' || (typeof msg === 'string' && msg.includes("Could not find the 'updated_at'"))) {
+        try {
+          const { error: retryErr } = await svc.from('emotional_state').update(baseUpdate as any).eq('id', result.newState?.id);
+          if (retryErr) throw retryErr;
+        } catch (retryErr) {
+          console.error('updateEmotionalStateFromSimulation retry error (no updated_at):', retryErr);
+          throw retryErr;
+        }
+      } else {
+        console.error('updateEmotionalStateFromSimulation error:', err);
+        throw err;
+      }
+    }
 
     for (const rel of result.relationshipUpdates || []) {
       const { error: relError } = await svc.from('relationships').update({
@@ -228,6 +250,181 @@ export async function getContentById(supabase: SupabaseClient, id: string) {
   } catch (err) {
     console.error('getContentById exception', err);
     return null;
+  }
+}
+
+import type { MasterPlan, StudioContext, InspirationSeed } from '@/types/database';
+import { getContextCache } from '@/lib/studio/contextCache';
+
+export async function getLatestMasterPlan(supabase: SupabaseClient): Promise<MasterPlan | null> {
+  try {
+    const { data, error } = await supabase
+      .from('master_plans')
+      .select('*')
+      .order('date', { ascending: false })
+      .limit(1)
+      .single();
+    if (error) {
+      console.error('getLatestMasterPlan error', error);
+      return null;
+    }
+    return data as MasterPlan;
+  } catch (err) {
+    console.error('getLatestMasterPlan exception', err);
+    return null;
+  }
+}
+
+export async function saveMasterPlan(supabase: SupabaseClient, plan: Partial<MasterPlan>): Promise<MasterPlan | null> {
+  try {
+    const service = createServiceRoleClient();
+    const svc: any = service;
+    const { data, error } = await svc
+      .from('master_plans')
+      .insert(plan as any)
+      .select()
+      .limit(1)
+      .single();
+    if (error) {
+      console.error('saveMasterPlan error', error);
+      return null;
+    }
+    return data as MasterPlan;
+  } catch (err) {
+    console.error('saveMasterPlan exception', err);
+    return null;
+  }
+}
+
+export async function getStudioContext(retryOnFailure: boolean = true): Promise<StudioContext | null> {
+  try {
+    const supabase = createServiceRoleClient();
+
+    // Get emotional state
+    const emotionalState = await getEmotionalState(supabase);
+    if (!emotionalState && retryOnFailure) {
+      await initializeIfNeeded();
+      return getStudioContext(false);
+    }
+
+    // Get today's master plan and seeds
+    const masterPlanWithSeeds = await getTodaysMasterPlanWithSeeds(supabase);
+    if (!masterPlanWithSeeds && retryOnFailure) {
+      await initializeIfNeeded();
+      return getStudioContext(false);
+    }
+
+    // Get relationships
+    const relationships = await getRelationships(supabase);
+    
+    // Try to get weather data if available
+    let weather = null;
+    try {
+      const weatherRes = await fetch('https://api.weatherapi.com/v1/current.json?key=YOUR_API_KEY&q=auto:ip');
+      if (weatherRes.ok) {
+        const data = await weatherRes.json();
+        weather = {
+          temp_c: data.current.temp_c,
+          condition: data.current.condition.text,
+          location: `${data.location.name}, ${data.location.region}`
+        };
+      }
+    } catch (err) {
+      console.warn('Weather fetch failed:', err);
+    }
+
+    // If an in-memory cached narrative exists (set by persist-narrative), include it as a tale_event
+  const cached = getContextCache();
+  // If cache contains an emotional_state (set by simulate or persist-narrative), prefer it so clients see immediate changes
+  const emotional_state = cached?.emotional_state ? cached.emotional_state : emotionalState;
+  const tale_event = cached?.todaysNarrative ? { description: cached.todaysNarrative.narrative, timestamp: cached.todaysNarrative.timestamp } : null;
+
+    return {
+      emotional_state,
+      master_plan: masterPlanWithSeeds,
+      relationships,
+      weather,
+      tale_event
+    } as any;
+
+  } catch (error) {
+    console.error('Studio context fetch failed:', error);
+    
+    if (!retryOnFailure) {
+      return null;
+    }
+
+    // Attempt auto-seeding directly using service role RPC (avoid server-side fetch to app route)
+    try {
+      console.log('Attempting auto-seed via exec_sql...');
+      const svc = createServiceRoleClient();
+      // Create minimal tables if missing
+      await svc.rpc('exec_sql', { sql: `
+        CREATE TABLE IF NOT EXISTS emotional_state (
+          id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+          primary_emotions jsonb DEFAULT '{}',
+          mood jsonb DEFAULT '{}',
+          last_event text,
+          last_event_timestamp timestamptz,
+          created_at timestamptz DEFAULT now(),
+          updated_at timestamptz DEFAULT now()
+        );
+      ` } as any);
+
+      await svc.rpc('exec_sql', { sql: `
+        CREATE TABLE IF NOT EXISTS relationships (
+          id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+          entity_name text UNIQUE,
+          status text,
+          decay_timer timestamptz,
+          last_interaction timestamptz,
+          created_at timestamptz DEFAULT now(),
+          updated_at timestamptz DEFAULT now()
+        );
+      ` } as any);
+
+      await svc.rpc('exec_sql', { sql: `
+        CREATE TABLE IF NOT EXISTS master_plans (
+          id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+          date date NOT NULL,
+          theme text,
+          narrative text,
+          mood_summary text,
+          quota jsonb DEFAULT '{}',
+          created_at timestamptz DEFAULT now(),
+          updated_at timestamptz DEFAULT now()
+        );
+      ` } as any);
+
+      await svc.rpc('exec_sql', { sql: `
+        CREATE TABLE IF NOT EXISTS simulation_proposals (
+          id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+          title text,
+          narrative text,
+          payload jsonb DEFAULT '{}',
+          created_at timestamptz DEFAULT now()
+        );
+      ` } as any);
+
+      await svc.rpc('exec_sql', { sql: `
+        CREATE TABLE IF NOT EXISTS inspiration_seeds (
+          id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+          master_plan_id uuid REFERENCES master_plans(id) ON DELETE CASCADE,
+          type text NOT NULL,
+          label text NOT NULL,
+          topic text,
+          priority integer DEFAULT 1,
+          emotional_context jsonb DEFAULT '{}',
+          created_at timestamptz DEFAULT now()
+        );
+      ` } as any);
+
+      console.log('Auto-seed via exec_sql completed, retrying context fetch...');
+      return getStudioContext(false);
+    } catch (seedError) {
+      console.error('Auto-seed attempt failed:', seedError);
+      return null;
+    }
   }
 }
 

@@ -4,6 +4,54 @@
 
 ---
 
+## 🚨 CRITICAL: Fix Build Errors First (2 minutes)
+
+**Before following the deployment steps, fix these two configuration issues:**
+
+### Error 1: Missing Tailwind Typography Plugin
+
+**Symptom:** `Error: Cannot find module '@tailwindcss/typography'`
+
+**Fix:**
+1. Open `package.json` in VS Code
+2. Find the `devDependencies` section (around line 39)
+3. Add this line after `"tailwindcss": "^3.4.3",`:
+  ```json
+  "@tailwindcss/typography": "^0.5.10",
+  ```
+4. Save the file
+5. Run: `npm install`
+
+### Error 2: Deprecated Next.js Config
+
+**Symptom:** `Invalid next.config.js options detected: experimental.serverActions`
+
+**Fix:**
+1. Open `next.config.js` in VS Code
+2. Find lines 5-7 (the `experimental` section)
+3. Delete these lines:
+  ```javascript
+  experimental: {
+    serverActions: true
+  },
+  ```
+4. Save the file
+
+**After fixing both issues:**
+```bash
+npm install  # Install the typography plugin
+npm run dev  # Should start without errors now
+```
+
+**Expected output:**
+```
+▲ Next.js 14.2.33
+- Local:        http://localhost:3000
+✓ Ready in 3s
+```
+
+**If you still see errors, check the Troubleshooting section at the bottom.**
+
 ## Step 1: Get Your API Keys (5 minutes)
 
 ### 🔑 Key 1: Supabase Anon Key (REQUIRED)

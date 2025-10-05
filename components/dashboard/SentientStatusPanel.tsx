@@ -4,6 +4,8 @@ import EmotionalGlow from './EmotionalGlow';
 import EmotionRadarChart from './EmotionRadarChart';
 import LifeEventCard from './LifeEventCard';
 import RelationshipGraph from './RelationshipGraph';
+import SimulationProposalPanel from './SimulationProposalPanel';
+import MoodAcceptanceControls from './MoodAcceptanceControls';
 
 type PrimaryEmotions = any;
 
@@ -76,9 +78,13 @@ export default function SentientStatusPanel({ emotionalState, relationships }: P
 
       <div className="space-y-4">
         <LifeEventCard event={emotionalState?.last_event || null} timestamp={emotionalState?.last_event_timestamp || null} />
+        <MoodAcceptanceControls />
       </div>
 
       <RelationshipGraph relationships={relationships} />
+      <div className="mt-4">
+        <SimulationProposalPanel />
+      </div>
     </div>
   );
 }

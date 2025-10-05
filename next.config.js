@@ -2,9 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  experimental: {
-    serverActions: true
-  },
+  // Server Actions are enabled by default in Next.js 14.2+
+  // experimental.serverActions removed (deprecated)
   images: {
     domains: ['fgfxozvcibhuqgkjywtr.supabase.co']
   },
@@ -18,7 +17,20 @@ const nextConfig = {
 
     return config;
   },
-  output: 'standalone'
+  output: 'standalone',
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.weatherapi.com https://api.openrouter.ai https://generativelanguage.googleapis.com wss: ws:; media-src 'self' data: https:; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';"
+          }
+        ]
+      }
+    ];
+  }
 };
 
 module.exports = nextConfig;

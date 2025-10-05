@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import type { GeneratedContent } from '@/types/database';
 
+/**
+ * @deprecated This component is replaced by RefineModal in the Studio.
+ * It's kept for backward compatibility with any legacy code that might reference it.
+ * New code should use RefineModal from @/components/studio instead.
+ * 
+ * RefineModal provides:
+ * - Dual-mode editing (manual JSON editing + AI regeneration)
+ * - Glassmorphic Studio styling
+ * - Emotional context integration
+ * - Better UX with mode toggles and helper text
+ */
+
 export default function ContentEditModal({ open, item, onClose, onSave }: { open: boolean; item?: GeneratedContent | null; onClose: () => void; onSave: (updated: GeneratedContent) => void }) {
   const [draft, setDraft] = useState<string>(() => JSON.stringify(item?.content_data ?? {}, null, 2));
 

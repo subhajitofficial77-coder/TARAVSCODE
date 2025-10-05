@@ -50,6 +50,46 @@ serve(async (req) => {
       if (!relErr) updatedRelationships.push(rel.entity_name || id);
     }
 
+    // Ensure a master plan exists for today. If not, generate one from simulation/daily plans
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existingPlan } = await supabase.from('master_plans').select('id').eq('date', today).limit(1).maybeSingle();
+      if (!existingPlan) {
+        // fetch pending daily plans to convert to seeds
+        const { data: plans } = await supabase.from('daily_plans').select('*').eq('status', 'pending').limit(5).order('id', { ascending: true });
+        const seeds = (plans || []).map((p: any, i: number) => ({ id: `seed-${i+1}`, label: `${p.item_type === 'content' ? 'Draft a carousel post about' : p.item_type === 'reflection' ? 'Create a reflective caption on' : 'Brainstorm ideas for'} ${p.topic}`, type: p.item_type === 'content' ? 'carousel' : p.item_type === 'reflection' ? 'caption' : 'post', topic: p.topic, priority: i+1 }));
+
+        const narrative = (function() {
+          const em = result.newState?.primary_emotions || {};
+          const joy = em.joy || 0;
+          if (joy > 0.6) return 'Feeling inspired and energized after the morning awakening.';
+          if ((em.sadness || 0) > 0.5) return 'A reflective day, processing emotions and memories.';
+          if ((result.summary || '').toLowerCase().includes('stress') || (result.newState?.mood?.stress_level || 0) > 0.6) return 'Feeling a bit overwhelmed — focusing on calm and simple actions today.';
+          return 'A day to create, explore, and connect.';
+        })();
+
+        const theme = (function() { const em = result.newState?.primary_emotions || {}; const dominant = Object.entries(em).sort((a:any,b:any)=>b[1]-a[1])[0]?.[0] || 'joy'; return dominant === 'joy' ? 'Celebration' : dominant === 'sadness' ? 'Reflection' : 'Creative Sparks'; })();
+
+        const mood_summary = (result.newState && result.newState.mood) ? 'Optimistic and Energized' : 'Balanced';
+
+        const now = new Date().toISOString();
+        const { data: newPlan, error: insertErr } = await supabase.from('master_plans').insert([{
+          date: today,
+          narrative,
+          theme,
+          mood_summary,
+          inspiration_seeds: seeds,
+          emotional_snapshot: result.newState || null,
+          quota: { carousel: 1, story: 3, caption: 2, post: 1 },
+          created_at: now,
+          updated_at: now
+        }]).select().maybeSingle();
+        if (insertErr) console.error('Failed to insert master_plan', insertErr);
+      }
+    } catch (e) {
+      console.error('master plan generation failed', e);
+    }
+
     return new Response(JSON.stringify({ success: true, event: result.event, dominant_emotion: getDominantEmotion(result.newState.primary_emotions), updated_relationships: updatedRelationships.length, summary: result.summary }), { status: 200 });
   } catch (err) {
     console.error('Daily Awakening Error', err);

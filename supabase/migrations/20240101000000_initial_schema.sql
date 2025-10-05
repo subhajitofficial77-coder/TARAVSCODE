@@ -1,6 +1,8 @@
 -- Initial schema for TARA emotional engine
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS "vector";
+
+-- Create extensions in their own transaction to ensure they're available
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 -- Enums
 DO $$ BEGIN
@@ -29,8 +31,7 @@ CREATE TABLE IF NOT EXISTS emotional_state (
   core_traits JSONB NOT NULL DEFAULT '{"warmth":0.9,"wit":0.8,"ambition":0.95}',
   last_event TEXT,
   last_event_timestamp TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- relationships table
@@ -67,7 +68,6 @@ CREATE TABLE IF NOT EXISTS chat_history (
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_emotional_state_updated_at ON emotional_state(updated_at);
 CREATE INDEX IF NOT EXISTS idx_relationships_entity_name ON relationships(entity_name);
 CREATE INDEX IF NOT EXISTS idx_relationships_status ON relationships(status);
 CREATE INDEX IF NOT EXISTS idx_generated_content_created_at ON generated_content(created_at);
@@ -91,13 +91,52 @@ CREATE TRIGGER trg_relationships_updated_at BEFORE UPDATE ON relationships FOR E
 -- Initial data
 INSERT INTO emotional_state (primary_emotions, mood, core_traits) SELECT primary_emotions, mood, core_traits FROM (VALUES ( '{"joy":0.5,"trust":0.5,"fear":0.3,"surprise":0.4,"sadness":0.3,"disgust":0.2,"anger":0.2,"anticipation":0.6}'::jsonb, '{"optimism":0.7,"energy_level":0.6,"stress_level":0.3}'::jsonb, '{"warmth":0.9,"wit":0.8,"ambition":0.95}'::jsonb )) AS v(primary_emotions, mood, core_traits) WHERE NOT EXISTS (SELECT 1 FROM emotional_state);
 
-INSERT INTO relationships (entity_name, relationship_type, status) VALUES
-('Mother','family','warm') ON CONFLICT DO NOTHING,
-('Younger Brother','family','neutral') ON CONFLICT DO NOTHING,
-('Best Friend','friend','warm') ON CONFLICT DO NOTHING;
+INSERT INTO relationships (entity_name, relationship_type, status)
+SELECT v.entity_name, v.relationship_type::relationship_type, v.status::relationship_status
+FROM (VALUES
+  ('Mother', 'family', 'warm'),
+  ('Younger Brother', 'family', 'neutral'),
+  ('Best Friend', 'friend', 'warm')
+) AS v(entity_name, relationship_type, status)
+ON CONFLICT DO NOTHING;
+
+-- master_plans table
+CREATE TABLE IF NOT EXISTS master_plans (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  date DATE NOT NULL UNIQUE,
+  theme TEXT NOT NULL,
+  narrative TEXT NOT NULL,
+  emotional_context JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- inspiration_seeds table
+CREATE TABLE IF NOT EXISTS inspiration_seeds (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  master_plan_id UUID NOT NULL REFERENCES master_plans(id) ON DELETE CASCADE,
+  type content_type NOT NULL,
+  label TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  priority INTEGER NOT NULL,
+  emotional_context JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_master_plans_date ON master_plans(date);
+CREATE INDEX IF NOT EXISTS idx_inspiration_seeds_master_plan ON inspiration_seeds(master_plan_id);
+CREATE INDEX IF NOT EXISTS idx_inspiration_seeds_type ON inspiration_seeds(type);
+
+-- Add triggers for new tables
+CREATE TRIGGER trg_master_plans_updated_at BEFORE UPDATE ON master_plans FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER trg_inspiration_seeds_updated_at BEFORE UPDATE ON inspiration_seeds FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Comments
 COMMENT ON TABLE emotional_state IS 'Stores the single emotional state snapshot for TARA with primary_emotions, mood, and core traits as JSONB structures.';
 COMMENT ON TABLE relationships IS 'Represents TARA''s relationships with entities and their status, decay timers and notes.';
 COMMENT ON TABLE generated_content IS 'Generated creative outputs with emotional context snapshot.';
+COMMENT ON TABLE master_plans IS 'Daily creative master plans with themes and narratives.';
+COMMENT ON TABLE inspiration_seeds IS 'Individual inspiration seeds associated with master plans.';
 COMMENT ON TABLE chat_history IS 'Chat messages between users and TARA and system messages, including optional emotional state snapshot.';

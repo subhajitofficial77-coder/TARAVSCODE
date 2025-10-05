@@ -14,6 +14,14 @@ html { scroll-behavior: smooth; }
   --tara-trust: #2ECC71;
   --tara-bg-dark: #0c0414;
   --tara-glass: rgba(255,255,255,0.1);
+  /* Studio ambiance variables (dynamically updated by useEmotionalStyling) */
+  --studio-primary-color: #FFD700;
+  --studio-secondary-color: #2ECC71;
+  --studio-tertiary-color: #4A90E2;
+  --studio-intensity: 0.5;
+  --studio-animation-speed: 2s;
+  --studio-glow-radius: 20px;
+  --studio-wave-amplitude: 50;
 }
 
 /* Light mode overrides: applied when document.documentElement has .light class */
@@ -48,6 +56,26 @@ html.light body {
   box-shadow: 0 0 30px rgba(255,255,255,0.04);
 }
 
+/* Studio-specific utilities */
+.studio-ambiance {
+  transition: background 2s ease-in-out, opacity 1.5s ease-in-out;
+}
+
+.studio-glow {
+  box-shadow: 0 0 var(--studio-glow-radius) var(--studio-primary-color);
+  transition: box-shadow 1.5s ease-in-out;
+}
+
+.studio-text-accent {
+  color: var(--studio-primary-color);
+  transition: color 1.5s ease-in-out;
+}
+
+.studio-border-accent {
+  border-color: var(--studio-primary-color);
+  transition: border-color 1.5s ease-in-out;
+}
+
 .text-gradient {
   background: linear-gradient(90deg, var(--tara-joy), var(--tara-trust));
   -webkit-background-clip: text;
@@ -55,6 +83,17 @@ html.light body {
 }
 
 .animate-float { animation: float 6s ease-in-out infinite; }
+
+/* Noise utility */
+.bg-noise {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'><filter id='noise'><feTurbulence baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23noise)' opacity='0.05'/></svg>");
+  background-repeat: repeat;
+}
+
+/* Gradient blob helpers (positioning is done in markup) */
+.blob-1 { background: radial-gradient(circle at 30% 30%, rgba(139,92,246,0.9), rgba(59,130,246,0.6)); }
+.blob-2 { background: radial-gradient(circle at 70% 40%, rgba(236,72,153,0.95), rgba(250,204,21,0.7)); }
+.blob-3 { background: radial-gradient(circle at 50% 70%, rgba(250,204,21,0.9), rgba(125,211,252,0.6)); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -71,4 +110,50 @@ html.light body {
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
+
+/* subtle vignette helper to focus center panels */
+.panel-vignette::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 40% 35%, rgba(255,255,255,0.03), transparent 30%);
+}
+
+/* header text shadow helper */
+.header-text-shadow { text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
+
+@keyframes studio-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes studio-drift {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(10px, -10px); }
+  50% { transform: translate(-5px, 10px); }
+  75% { transform: translate(-10px, -5px); }
+}
+
+@keyframes studio-rotate-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.animate-studio-pulse {
+  animation: studio-pulse var(--studio-animation-speed) ease-in-out infinite;
+}
+
+.animate-studio-drift {
+  animation: studio-drift calc(var(--studio-animation-speed) * 3) ease-in-out infinite;
+}
+
+.animate-studio-rotate {
+  animation: studio-rotate-slow calc(var(--studio-animation-speed) * 10) linear infinite;
 }

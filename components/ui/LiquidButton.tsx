@@ -70,21 +70,22 @@ function LayeredSVG({ speed }: { speed: number }) {
 export default function LiquidButton({ children, className = '', colors, ...props }: LiquidButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
   const prefersReduced = useReducedMotion();
-  const speed = useMemo(() => (isHovered ? 3 : 1), [isHovered]);
+  // increase hover speed so motion feels livelier when interacting
+  const speed = useMemo(() => (isHovered ? 4 : 1), [isHovered]);
 
   return (
     <button
       {...props}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`relative overflow-hidden rounded-full px-8 py-3 text-white font-semibold ${className}`}
+      className={`relative overflow-hidden rounded-full px-6 py-2 text-white font-semibold transition-transform duration-200 ease-out shadow-lg hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-white/30 ${className}`}
       aria-label={props['aria-label'] || 'Call to action'}
     >
       <div className="absolute inset-0 z-0 pointer-events-none">
         {!prefersReduced && <LayeredSVG speed={speed} />}
         {prefersReduced && <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-blue-400 to-purple-500 opacity-80" />}
       </div>
-      <span className="relative z-10">{children}</span>
+      <span className="relative z-10 block px-2 py-0.5">{children}</span>
     </button>
   );
 }

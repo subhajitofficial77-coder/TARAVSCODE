@@ -1,0 +1,2 @@
+DROP EXTENSION IF EXISTS "uuid-ossp";
+CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
