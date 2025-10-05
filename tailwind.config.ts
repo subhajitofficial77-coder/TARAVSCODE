@@ -48,6 +48,7 @@ const config: Config = {
     }
   },
   plugins: [
+    require('@tailwindcss/typography'),
     plugin(function ({ addComponents }) {
       addComponents({
         '.glass': {
