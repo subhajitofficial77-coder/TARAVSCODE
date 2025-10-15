@@ -46,3 +46,4 @@ next-env.d.ts
 # Performance profiling
 *.cpuprofile
 *.heapprofile
+.env
