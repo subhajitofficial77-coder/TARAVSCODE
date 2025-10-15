@@ -11,7 +11,7 @@ if (!NEXT_URL || !NEXT_KEY) {
 
 // Ensure a single browser client across HMR by attaching to globalThis
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line no-var
   var __SUPABASE_BROWSER_CLIENT__: any;
 }
 

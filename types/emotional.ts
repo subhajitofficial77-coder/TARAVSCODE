@@ -23,3 +23,12 @@ export interface EmotionalAnimationStyle {
   scale: string;
   opacity: string;
 }
+
+export interface EmotionColor {
+  bgClass: string;
+  textClass: string;
+  borderClass: string;
+  glowClass: string;
+}
+
+export type Emotions = 'joy' | 'trust' | 'fear' | 'surprise' | 'sadness' | 'disgust' | 'anger' | 'anticipation';

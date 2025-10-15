@@ -29,7 +29,7 @@ export type CoreTraits = {
 
 export type EmotionalState = {
   id: number;
-  primary_emotions: PrimaryEmotions & { confidence?: number };
+  primary_emotions: PrimaryEmotions;
   mood: Mood;
   core_traits: CoreTraits;
   last_event: string;
@@ -52,8 +52,9 @@ export type Relationship = {
 
 export type ChatMessage = {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'tara';
   content: string;
+  message?: string;
   emotional_context?: {
     primary_emotions?: PrimaryEmotions;
     mood?: Mood;

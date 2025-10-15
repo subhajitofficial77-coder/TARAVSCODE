@@ -1,106 +1,315 @@
+import type { PrimaryEmotions, Mood, CoreTraits, ContentType } from '@/types/database';
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export interface Database {
   public: {
     Tables: {
-      emotional_state: EmotionalStateTable
-      relationships: RelationshipsTable
-      master_plans: MasterPlansTable
-      inspiration_seeds: InspirationSeedsTable
+      emotional_state: {
+        Row: {
+          id: string
+          primary_emotions: PrimaryEmotions
+          mood: Mood
+          core_traits: CoreTraits
+          last_event: string | null
+          last_event_timestamp: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          primary_emotions?: PrimaryEmotions
+          mood?: Mood
+          core_traits?: CoreTraits
+          last_event?: string | null
+          last_event_timestamp?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          primary_emotions?: PrimaryEmotions
+          mood?: Mood
+          core_traits?: CoreTraits
+          last_event?: string | null
+          last_event_timestamp?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      relationships: {
+        Row: {
+          id: string
+          entity_name: string
+          relationship_type: 'family' | 'friend' | 'colleague' | 'other'
+          status: 'warm' | 'neutral' | 'strained' | 'excellent'
+          last_interaction: string | null
+          decay_timer: string | null
+          notes: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          entity_name: string
+          relationship_type: 'family' | 'friend' | 'colleague' | 'other'
+          status?: 'warm' | 'neutral' | 'strained' | 'excellent'
+          last_interaction?: string | null
+          decay_timer?: string | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          entity_name?: string
+          relationship_type?: 'family' | 'friend' | 'colleague' | 'other'
+          status?: 'warm' | 'neutral' | 'strained' | 'excellent'
+          last_interaction?: string | null
+          decay_timer?: string | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      master_plans: {
+        Row: {
+          id: string
+          date: string
+          theme: string
+          narrative: string
+          emotional_context: Json | null
+          mood_summary: string | null
+          quota: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          date: string
+          theme: string
+          narrative: string
+          emotional_context?: Json | null
+          mood_summary?: string | null
+          quota?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          date?: string
+          theme?: string
+          narrative?: string
+          emotional_context?: Json | null
+          mood_summary?: string | null
+          quota?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      inspiration_seeds: {
+        Row: {
+          id: string
+          master_plan_id: string
+          type: ContentType
+          label: string
+          topic: string
+          priority: number
+          emotional_context: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          master_plan_id: string
+          type: ContentType
+          label: string
+          topic: string
+          priority: number
+          emotional_context?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          master_plan_id?: string
+          type?: ContentType
+          label?: string
+          topic?: string
+          priority?: number
+          emotional_context?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      generated_content: {
+        Row: {
+          id: string
+          content_type: ContentType
+          content_data: Json
+          emotional_context: Json
+          user_feedback: 'accepted' | 'rejected' | null
+          platform: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          content_type: ContentType
+          content_data: Json
+          emotional_context: Json
+          user_feedback?: 'accepted' | 'rejected' | null
+          platform?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          content_type?: ContentType
+          content_data?: Json
+          emotional_context?: Json
+          user_feedback?: 'accepted' | 'rejected' | null
+          platform?: string | null
+          created_at?: string | null
+        }
+      }
+      chat_history: {
+        Row: {
+          id: string
+          role: 'user' | 'tara' | 'system'
+          message: string
+          emotional_state: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          role: 'user' | 'tara' | 'system'
+          message: string
+          emotional_state?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          role?: 'user' | 'tara' | 'system'
+          message?: string
+          emotional_state?: Json | null
+          created_at?: string | null
+        }
+      }
+      content_memories: {
+        Row: {
+          id: string
+          content_type: string
+          platform: string | null
+          original_content: Json | null
+          analysis_result: Json | null
+          generated_content: Json | null
+          emotional_state: Json | null
+          weather_context: Json | null
+          user_feedback: string | null
+          feedback_notes: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          content_type: string
+          platform?: string | null
+          original_content?: Json | null
+          analysis_result?: Json | null
+          generated_content?: Json | null
+          emotional_state?: Json | null
+          weather_context?: Json | null
+          user_feedback?: string | null
+          feedback_notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          content_type?: string
+          platform?: string | null
+          original_content?: Json | null
+          analysis_result?: Json | null
+          generated_content?: Json | null
+          emotional_state?: Json | null
+          weather_context?: Json | null
+          user_feedback?: string | null
+          feedback_notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      generated_prompts: {
+        Row: {
+          id: string
+          prompt_type: string
+          prompt_content: string
+          emotional_context: Json | null
+          creation_parameters: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          prompt_type: string
+          prompt_content: string
+          emotional_context?: Json | null
+          creation_parameters?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          prompt_type?: string
+          prompt_content?: string
+          emotional_context?: Json | null
+          creation_parameters?: Json | null
+          created_at?: string | null
+        }
+      }
+      simulation_proposals: {
+        Row: {
+          id: string
+          description: string
+          emotional_impact: Json | null
+          mood_impact: Json | null
+          created_at: string | null
+          accepted: boolean | null
+        }
+        Insert: {
+          id?: string
+          description: string
+          emotional_impact?: Json | null
+          mood_impact?: Json | null
+          created_at?: string | null
+          accepted?: boolean | null
+        }
+        Update: {
+          id?: string
+          description?: string
+          emotional_impact?: Json | null
+          mood_impact?: Json | null
+          created_at?: string | null
+          accepted?: boolean | null
+        }
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      exec_sql: {
+        Args: {
+          sql_query: string
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
     }
   }
-}
-
-interface EmotionalStateTable {
-  Row: {
-    id: number
-    primary_emotions: EmotionalState
-    mood: Mood
-    core_traits: CoreTraits
-    last_event: string
-    last_event_timestamp: string
-    created_at?: string
-  }
-  Insert: Omit<EmotionalStateTable['Row'], 'id' | 'created_at'>
-  Update: Partial<EmotionalStateTable['Insert']>
-}
-
-interface RelationshipsTable {
-  Row: {
-    id: string
-    entity_name: string
-    relationship_type: 'family' | 'friend' | 'colleague' | 'other'
-    status: 'warm' | 'neutral' | 'strained' | 'excellent'
-    last_interaction: string
-    decay_timer?: string
-    notes?: string
-    created_at?: string
-    updated_at?: string
-  }
-  Insert: Omit<RelationshipsTable['Row'], 'id' | 'created_at' | 'updated_at'>
-  Update: Partial<RelationshipsTable['Insert']>
-}
-
-interface DailyPlansTable {
-  Row: {
-    id: number
-    task: string
-    completed: boolean
-    created_at?: string
-  }
-  Insert: Omit<DailyPlansTable['Row'], 'id' | 'created_at'>
-  Update: Partial<DailyPlansTable['Insert']>
-}
-
-interface MasterPlansTable {
-  Row: {
-    id: string
-    date: string
-    theme: string
-    narrative: string
-    emotional_context?: Record<string, number>
-    created_at?: string
-    updated_at?: string
-  }
-  Insert: Omit<MasterPlansTable['Row'], 'id' | 'created_at' | 'updated_at'>
-  Update: Partial<MasterPlansTable['Insert']>
-}
-
-interface InspirationSeedsTable {
-  Row: {
-    id: string
-    master_plan_id: string
-    type: 'carousel' | 'story' | 'caption' | 'post'
-    label: string
-    topic: string
-    priority: number
-    emotional_context?: Record<string, number>
-    created_at?: string
-    updated_at?: string
-  }
-  Insert: Omit<InspirationSeedsTable['Row'], 'id' | 'created_at' | 'updated_at'>
-  Update: Partial<InspirationSeedsTable['Insert']>
-}
-
-interface EmotionalState {
-  joy: number
-  trust: number
-  anticipation: number
-  sadness: number
-  fear: number
-  anger: number
-  disgust: number
-  surprise: number
-}
-
-interface Mood {
-  optimism: number
-  energy_level: number
-  stress_level: number
-}
-
-interface CoreTraits {
-  openness: number
-  conscientiousness: number
-  extraversion: number
-  agreeableness: number
-  neuroticism: number
 }

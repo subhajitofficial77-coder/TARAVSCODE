@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         // Save TARA's message with emotional state snapshot
         try {
           const currentState = await getEmotionalState(supabase);
-          await saveChatMessage(supabase, { role: 'tara', message: taraResponse, emotional_state: currentState ?? undefined });
+          await saveChatMessage(supabase, { role: 'tara', content: taraResponse, message: taraResponse, emotional_context: currentState ? { primary_emotions: currentState.primary_emotions, mood: currentState.mood } : undefined });
         } catch (e) {
           console.warn('Failed to save tara message:', e);
         }

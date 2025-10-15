@@ -43,7 +43,9 @@ export default function HeroScene() {
           // Dolly camera from z=10 to z=2
           if (cameraRef.current) {
             cameraRef.current.position.z = 10 - p * 8;
-            cameraRef.current.updateProjectionMatrix && cameraRef.current.updateProjectionMatrix();
+            if (cameraRef.current.updateProjectionMatrix) {
+              cameraRef.current.updateProjectionMatrix();
+            }
           }
           // Parallax orb and text
           if (orbRef.current) {
@@ -61,7 +63,9 @@ export default function HeroScene() {
       // (ctx.revert() below will remove this ScrollTrigger)
       return () => {
         try {
-          st && st.kill && st.kill();
+          if (st && st.kill) {
+            st.kill();
+          }
         } catch (e) {
           // ignore
         }

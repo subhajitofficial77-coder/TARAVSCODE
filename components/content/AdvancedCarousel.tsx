@@ -20,11 +20,11 @@ export interface CarouselProps {
 }
 
 const DEFAULT_ITEM_ICONS = [
-  <FileText className="h-[16px] w-[16px] text-white" />,
-  <Circle className="h-[16px] w-[16px] text-white" />,
-  <Layers className="h-[16px] w-[16px] text-white" />,
-  <Layout className="h-[16px] w-[16px] text-white" />,
-  <Code className="h-[16px] w-[16px] text-white" />,
+  <FileText key="icon-0" className="h-[16px] w-[16px] text-white" />,
+  <Circle key="icon-1" className="h-[16px] w-[16px] text-white" />,
+  <Layers key="icon-2" className="h-[16px] w-[16px] text-white" />,
+  <Layout key="icon-3" className="h-[16px] w-[16px] text-white" />,
+  <Code key="icon-4" className="h-[16px] w-[16px] text-white" />,
 ];
 
 const DRAG_BUFFER = 0;

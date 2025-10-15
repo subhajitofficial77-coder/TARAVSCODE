@@ -16,7 +16,7 @@ export default function AnimatedSection({ children, animation = 'fade', delay = 
     const prefersReduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced) return;
 
-    let ctx: gsap.Context | null = gsap.context(() => {
+    const ctx: gsap.Context | null = gsap.context(() => {
       if (animation === 'fade') {
         gsap.fromTo(el, { opacity: 0, y: 30 }, {
           opacity: 1,

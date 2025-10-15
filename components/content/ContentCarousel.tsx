@@ -33,13 +33,27 @@ function PlatformBadge({ platform }: { platform?: string | null }) {
 export default function ContentCarousel({ items, onItemClick, baseWidth = 380, autoplay = false }: Props) {
   // Use the full items list (no filtering) as requested by the review comment
   const panels = items || [];
-  if (!panels || panels.length === 0) return <div className="text-sm text-white/60">No content</div>;
 
   const itemWidth = baseWidth;
   const trackItemOffset = itemWidth + GAP;
   const [currentIndex, setCurrentIndex] = useState(0);
-
   const x = useMotionValue(0);
+
+  useEffect(() => {
+    // when currentIndex changes, animate x to the snap position
+    const to = -currentIndex * trackItemOffset;
+    const controls = animate(x, to, SPRING_CONFIG as any);
+    return controls.stop;
+  }, [currentIndex, trackItemOffset, x]);
+
+  // autoplay optional
+  useEffect(() => {
+    if (!autoplay) return;
+    const t = setInterval(() => setCurrentIndex((c) => (c + 1) % panels.length), 5000);
+    return () => clearInterval(t);
+  }, [autoplay, panels.length]);
+
+  if (!panels || panels.length === 0) return <div className="text-sm text-white/60">No content</div>;
 
   // compute per-card transforms relative to center index
   function cardStyleForIndex(i: number) {
@@ -68,13 +82,6 @@ export default function ContentCarousel({ items, onItemClick, baseWidth = 380, a
     );
     return <div className="w-10 h-10 flex items-center justify-center rounded-full bg-white/6"><span className="text-xs text-white">{getContentPlatformIcon(platform).slice(0,1)}</span></div>;
   }
-
-  useEffect(() => {
-    // when currentIndex changes, animate x to the snap position
-    const to = -currentIndex * trackItemOffset;
-    const controls = animate(x, to, SPRING_CONFIG as any);
-    return controls.stop;
-  }, [currentIndex, trackItemOffset]);
 
   function snapToNearest(offset: number, velocity: number) {
     // offset is the drag offset (px), velocity is pixels/sec
@@ -105,13 +112,6 @@ export default function ContentCarousel({ items, onItemClick, baseWidth = 380, a
   function next() {
     goTo(currentIndex + 1);
   }
-
-  // autoplay optional
-  useEffect(() => {
-    if (!autoplay) return;
-    const t = setInterval(() => setCurrentIndex((c) => (c + 1) % panels.length), 5000);
-    return () => clearInterval(t);
-  }, [autoplay, panels.length]);
 
   return (
     <div className="relative">

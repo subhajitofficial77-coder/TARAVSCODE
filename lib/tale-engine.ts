@@ -16,7 +16,6 @@ const BASELINE_EMOTIONS: PrimaryEmotions = {
   sadness: 0.3,
   disgust: 0.2,
   anger: 0.2,
-  confidence: 0.5,
   anticipation: 0.6
 };
 

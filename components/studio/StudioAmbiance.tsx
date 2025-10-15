@@ -15,18 +15,13 @@ export default function StudioAmbiance({ mode = 'auto', className }: Props) {
   const { context, isLoading } = useTaraStudio();
   const { dominantEmotion, intensity, topEmotions } = useEmotionalStyling();
   const isMobile = useMediaQuery('(max-width: 768px)');
-  
+
   // Declare all state hooks unconditionally at the top level
   const [primary, setPrimary] = React.useState('#FFD700');
   const [secondary, setSecondary] = React.useState('#2ECC71');
   const [tertiary, setTertiary] = React.useState('#4A90E2');
 
   const useParticle = mode === 'particle' || (mode === 'auto' && !isMobile);
-
-  // if particle mode, render immediately (no document reads)
-  if (useParticle) {
-    return <DottedSurface className={className} mode="particle" />;
-  }
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -38,6 +33,11 @@ export default function StudioAmbiance({ mode = 'auto', className }: Props) {
     setSecondary(s.trim());
     setTertiary(t.trim());
   }, [dominantEmotion, intensity, topEmotions]);
+
+  // if particle mode, render immediately (no document reads)
+  if (useParticle) {
+    return <DottedSurface className={className} mode="particle" />;
+  }
 
   const bg = `radial-gradient(circle at 30% 30%, ${primary}40, ${secondary}30)`;
   const blob = `radial-gradient(circle, ${tertiary}50, transparent)`;
